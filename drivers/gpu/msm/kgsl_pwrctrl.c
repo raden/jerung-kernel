@@ -193,13 +193,10 @@ void kgsl_pwrctrl_pwrlevel_change(struct kgsl_device *device,
 
 
 	trace_kgsl_pwrlevel(device, pwr->active_pwrlevel, pwrlevel->gpu_freq);
-<<<<<<< HEAD
-=======
 
-#ifdef CONFIG_CPU_FREQ_GOV_SLIM || CONFIG_CPU_FREQ_GOV_ELEMENTALX
+#ifdef CONFIG_CPU_FREQ_GOV_ELEMENTALX
 	graphics_boost = pwr->active_pwrlevel;
 #endif
->>>>>>> c513ae7... ElementalX governor
 }
 
 EXPORT_SYMBOL(kgsl_pwrctrl_pwrlevel_change);
