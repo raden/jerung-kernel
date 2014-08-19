@@ -66,7 +66,6 @@ static atomic_t intelli_plug_active = ATOMIC_INIT(0);
 static unsigned int cpus_boosted = DEFAULT_NR_CPUS_BOOSTED;
 static unsigned int min_cpus_online = DEFAULT_MIN_CPUS_ONLINE;
 static unsigned int max_cpus_online = DEFAULT_MAX_CPUS_ONLINE;
-static unsigned int full_mode_profile = 0;
 
 #if defined(CONFIG_LCD_NOTIFY) || defined(CONFIG_POWERSUSPEND) || defined(CONFIG_HAS_EARLYSUSPEND)
 static bool hotplug_suspended = false;
@@ -84,22 +83,12 @@ static unsigned int nr_fshift = DEFAULT_NR_FSHIFT;
 static unsigned int nr_run_hysteresis = 4;  /* 0.5 thread */
 static unsigned int debug_intelli_plug = 0;
 
-static unsigned int nr_run_thresholds_balance[] = {
+static unsigned int nr_run_thresholds_full[] = {
 /*	1,  2,  3,  4 - on-line cpus target */
 	5,  7,  9,  UINT_MAX /* avg run threads * 2 (e.g., 9 = 2.25 threads) */
 	};
 
-static unsigned int nr_run_thresholds_performance[] = {
-/*	1,  2,  3,  4 - on-line cpus target */
-	3,  5,  7,  UINT_MAX /* avg run threads * 2 (e.g., 9 = 2.25 threads) */
-	};
-
-static unsigned int nr_run_thresholds_conservative[] = {
-/*	1,  2,  3,  4 - on-line cpus target */
-	5,  13,  14,  UINT_MAX /* avg run threads * 2 (e.g., 9 = 2.25 threads) */
-	};
-
-static unsigned int nr_run_thresholds_tri[] = {
+static unsigned int nr_run_thresholds_turbo[] = {
 /*      1,  2,  3 - on-line cpus target */
         4,  6,  UINT_MAX /* avg run threads * 2 (e.g., 9 = 2.25 threads) */
         };
@@ -112,21 +101,6 @@ static unsigned int nr_run_thresholds_eco[] = {
 static unsigned int nr_run_thresholds_strict[] = {
 /*	   1 - on-line cpus target */
 	UINT_MAX /* avg run threads *2 (e.g., 9 = 2.25 threads) */
-	};
-
-static unsigned int nr_run_thresholds_disable[] = {
-/*	1,  2,  3,  4 - on-line cpus target */
-	0,  0,  0,  UINT_MAX /* avg run threads * 2 (e.g., 9 = 2.25 threads) */
-	};
-
-static unsigned int *nr_run_profiles[] = {
-	nr_run_thresholds_balance,
-	nr_run_thresholds_performance,
-	nr_run_thresholds_conservative,
-	nr_run_thresholds_disable,
-	nr_run_thresholds_tri,
-	nr_run_thresholds_eco,
-	nr_run_thresholds_strict
 	};
 
 static unsigned int nr_run_last;
@@ -211,7 +185,6 @@ static unsigned int calculate_thread_stats(void)
 	unsigned int avg_nr_run = avg_nr_running();
 	unsigned int nr_run;
 	unsigned int threshold_size;
-	unsigned int *current_profile;
 
 	threshold_size = max_cpus_online;
 	nr_run_hysteresis = max_cpus_online * 2;
@@ -220,16 +193,13 @@ static unsigned int calculate_thread_stats(void)
 	for (nr_run = 1; nr_run < threshold_size; nr_run++) {
 		unsigned int nr_threshold;
 		if (max_cpus_online >= 4)
-			current_profile = nr_run_profiles[full_mode_profile];
+			nr_threshold = nr_run_thresholds_full[nr_run - 1];
 		else if (max_cpus_online == 3)
-			current_profile = nr_run_profiles[4];
+			nr_threshold = nr_run_thresholds_turbo[nr_run - 1];
 		else if (max_cpus_online == 2)
-			current_profile = nr_run_profiles[5];
+			nr_threshold = nr_run_thresholds_eco[nr_run - 1];
 		else
-			current_profile = nr_run_profiles[6];
-
-		nr_threshold = current_profile[nr_run - 1];
-
+			nr_threshold = nr_run_thresholds_strict[0];
 		if (nr_run_last <= nr_run)
 			nr_threshold += nr_run_hysteresis;
 		if (avg_nr_run <= (nr_threshold << (FSHIFT - nr_fshift)))
@@ -654,7 +624,6 @@ show_one(max_cpus_online, max_cpus_online);
 show_one(max_cpus_online_susp, max_cpus_online_susp);
 show_one(suspend_defer_time, suspend_defer_time);
 #endif
-show_one(full_mode_profile, full_mode_profile);
 show_one(def_sampling_ms, def_sampling_ms);
 show_one(debug_intelli_plug, debug_intelli_plug);
 show_one(nr_fshift, nr_fshift);
@@ -683,7 +652,6 @@ store_one(cpus_boosted, cpus_boosted);
 #if defined(CONFIG_LCD_NOTIFY) || defined(CONFIG_POWERSUSPEND) || defined(CONFIG_HAS_EARLYSUSPEND)
 store_one(suspend_defer_time, suspend_defer_time);
 #endif
-store_one(full_mode_profile, full_mode_profile);
 store_one(def_sampling_ms, def_sampling_ms);
 store_one(debug_intelli_plug, debug_intelli_plug);
 store_one(nr_fshift, nr_fshift);
@@ -813,7 +781,6 @@ KERNEL_ATTR_RW(max_cpus_online);
 KERNEL_ATTR_RW(max_cpus_online_susp);
 KERNEL_ATTR_RW(suspend_defer_time);
 #endif
-KERNEL_ATTR_RW(full_mode_profile);
 KERNEL_ATTR_RW(boost_lock_duration);
 KERNEL_ATTR_RW(def_sampling_ms);
 KERNEL_ATTR_RW(debug_intelli_plug);
@@ -830,7 +797,6 @@ static struct attribute *intelli_plug_attrs[] = {
 	&max_cpus_online_susp_attr.attr,
 	&suspend_defer_time_attr.attr,
 #endif
-	&full_mode_profile_attr.attr,
 	&boost_lock_duration_attr.attr,
 	&def_sampling_ms_attr.attr,
 	&debug_intelli_plug_attr.attr,
