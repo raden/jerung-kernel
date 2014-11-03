@@ -134,7 +134,7 @@ config CPU_FREQ_DEFAULT_GOV_BLUACTIVE
 	select CPU_FREQ_GOV_BLUACTIVE
 	help
 	  Use the CPUFreq governor 'bluactive' as default. This allows
-	you to get a full dynamic cpu frequency capable system by simply
+	  you to get a full dynamic cpu frequency capable system by simply
 	  loading your cpufreq low-level hardware driver, using the
 	  'interactive' governor for latency-sensitive workloads.
 
@@ -282,7 +282,7 @@ config CPU_FREQ_GOV_BLUACTIVE
 	tristate "'bluactive' cpufreq policy governor"
 	help
 	  'bluactive' - This driver adds a dynamic cpufreq policy governor
-	designed for latency-sensitive workloads.
+           designed for latency-sensitive workloads.
 
 	  This governor attempts to reduce the latency of clock
 	  increases so that the system is more responsive to
